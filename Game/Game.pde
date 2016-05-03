@@ -39,14 +39,21 @@ final float RECT_MARGIN = 50;
 
 final int DATA_HEIGHT = 150;
 final int DATA_WIDTH = width;
-final int DATA_MARGIN = 5; // POUR LA MARGE DANS LA BARRE D'INFO
-final int TOP_VIEW_WIDTH = width - 2 * DATA_MARGIN;
-final int TOP_VIEW_HEIGHT = DATA_HEIGHT - 2 * DATA_MARGIN;
-final float TOP_VIEW_BALL_RADIUS = BALL_RADIUS / width * TOP_VIEW_WIDTH;
-final float TOP_VIEW_HOLE_RADIUS = CYLINDER_RADIUS / width * TOP_VIEW_WIDTH;
+//
+final int TOP_VIEW_MARGIN = 5; // POUR LA MARGE DANS LA BARRE D'INFO
+final int TOP_VIEW_HEIGHT = DATA_HEIGHT - 2 * TOP_VIEW_MARGIN;
+final int TOP_VIEW_WIDTH = TOP_VIEW_HEIGHT;
+final float TOP_VIEW_BALL_RADIUS = BALL_RADIUS / PLATE_WIDTH * TOP_VIEW_WIDTH;
+final float TOP_VIEW_HOLE_RADIUS = CYLINDER_RADIUS / PLATE_WIDTH * TOP_VIEW_WIDTH;
+//
+final int SCORE_MARGIN = 3;
+final int SCORE_HEIGHT = DATA_HEIGHT - 2 * SCORE_MARGIN;
+final int SCORE_WIDTH = 100;
+
 
 PGraphics BACKGROUND_VISUALISATION;
 PGraphics topView;
+PGraphics score;
 final Data data = new Data();
 
 enum Mode {
@@ -58,7 +65,6 @@ Mover mover;
 int nbCylinder;
 ArrayList<Cylinder> cylinders;
 Cylinder dummyCylinder;
-HScrollbar hs;
 
 void settings() {
   size(WIDTH, HEIGHT, P3D);
@@ -67,12 +73,12 @@ void settings() {
 void setup() {
   BACKGROUND_VISUALISATION = createGraphics(width, DATA_HEIGHT, P2D);
   topView = createGraphics(TOP_VIEW_WIDTH, TOP_VIEW_HEIGHT, P2D);
+  score = createGraphics(SCORE_WIDTH, SCORE_HEIGHT, P2D);
   nbCylinder = 0;
   cylinders = new ArrayList<Cylinder>();
   dummyCylinder = new Cylinder(new PVector(0,0,0));
   mover = new Mover();
   plane = new Plane();
-  hs = new HScrollbar(100,475, 300, 20);
 }
 
 void draw() {
@@ -91,9 +97,7 @@ void draw() {
       directionalLight(50, 100, 125, 0, 1, 0);
       directionalLight(50, 100, 125, 0, -1, 0);
       
-      //Pour gagner quelque pixel vers le haut pour la bare des score !
-      translate(0,-150,0);
-      
+      translate(0, -100, 0);
       //angleX = map(mouseY, 0, WIDTH, -PI/3, PI/3);
       //angleZ = map(mouseX, 0, HEIGHT, -PI/3, PI/3);
       
@@ -117,12 +121,10 @@ void draw() {
       mover.display();
     popMatrix();
     data.update(); // Enregistre la position de la balle
-    data.display(mover.position.x, mover.position.z, cylinders);
+    data.display(mover.position.x, mover.position.z, mover.velocity.mag(), cylinders);
     image(BACKGROUND_VISUALISATION, 0, height - DATA_HEIGHT);
-    image(topView, DATA_MARGIN, height - DATA_HEIGHT + DATA_MARGIN);
-    hs.update();
-    hs.display();
-    println(hs.getPos());
+    image(topView, TOP_VIEW_MARGIN, height - DATA_HEIGHT + TOP_VIEW_MARGIN);
+    image(score, 2 * TOP_VIEW_MARGIN + TOP_VIEW_WIDTH, height - DATA_HEIGHT + SCORE_MARGIN);
   } 
   else if (mode == Mode.OBSTACLE) {
     /* In ortho mode, all objects of same size appear the same 

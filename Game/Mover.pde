@@ -65,10 +65,13 @@ class Mover { //<>// //<>// //<>//
     n = position.copy().sub(pos);
     n.y = 0;
     double dist = Math.sqrt( n.dot(n));
-    
     if (dist <= BALL_RADIUS + r) { // collision
       n.normalize();
       velocity = velocity.sub( n.mult(2 * velocity.dot(n)) );
+      //n.mult(r + BALL_RADIUS);
+      //n.add(pos);
+      //position.x = n.x;
+      //position.z = n.z;
       return velocity.mag();
     } else {
       return 0;
