@@ -29,12 +29,32 @@ final float MU = 0.02;
 final float PLATE_HEIGHT = 20;
 final float PLATE_WIDTH = 300;
 final float PLATE_DEPTH = 300;
+Plane plane;
 
 final float BALL_RADIUS = 10;
 
 final float CYLINDER_RADIUS = 20;
 final float CYLINDER_HEIGHT = 50;
 final float RECT_MARGIN = 50;
+
+final int DATA_HEIGHT = 150;
+final int DATA_WIDTH = width;
+//
+final int TOP_VIEW_MARGIN = 5; // POUR LA MARGE DANS LA BARRE D'INFO
+final int TOP_VIEW_HEIGHT = DATA_HEIGHT - 2 * TOP_VIEW_MARGIN;
+final int TOP_VIEW_WIDTH = TOP_VIEW_HEIGHT;
+final float TOP_VIEW_BALL_RADIUS = BALL_RADIUS / PLATE_WIDTH * TOP_VIEW_WIDTH;
+final float TOP_VIEW_HOLE_RADIUS = CYLINDER_RADIUS / PLATE_WIDTH * TOP_VIEW_WIDTH;
+//
+final int SCORE_MARGIN = 3;
+final int SCORE_HEIGHT = DATA_HEIGHT - 2 * SCORE_MARGIN;
+final int SCORE_WIDTH = 100;
+
+
+PGraphics BACKGROUND_VISUALISATION;
+PGraphics topView;
+PGraphics score;
+final Data data = new Data();
 
 enum Mode {
   JEU, OBSTACLE
@@ -51,10 +71,14 @@ void settings() {
 }
 
 void setup() {
+  BACKGROUND_VISUALISATION = createGraphics(width, DATA_HEIGHT, P2D);
+  topView = createGraphics(TOP_VIEW_WIDTH, TOP_VIEW_HEIGHT, P2D);
+  score = createGraphics(SCORE_WIDTH, SCORE_HEIGHT, P2D);
   nbCylinder = 0;
   cylinders = new ArrayList<Cylinder>();
   dummyCylinder = new Cylinder(new PVector(0,0,0));
   mover = new Mover();
+  plane = new Plane();
 }
 
 void draw() {
@@ -68,61 +92,46 @@ void draw() {
   
   if (mode == Mode.JEU) {
     perspective();
-    camera(0, -CAMERA_HEIGHT, CAMERA_DEPTH, 0, 0, 0, 0, 1, 0);
-    directionalLight(50, 100, 125, 0, 1, 0);
-    directionalLight(50, 100, 125, 0, -1, 0);
-    
-    /*
-    angleX = map(mouseY, 0, WIDTH, -PI/3, PI/3);
-    angleZ = map(mouseX, 0, HEIGHT, -PI/3, PI/3);
-    */
-    
-    rotateX(-angleX);
-    rotateY(angleY);
-    rotateZ(angleZ);
-
-    stroke(255, 0, 0);
-    line(-AXIS_LENGTH, 0, 0, AXIS_LENGTH, 0, 0);
-    pushMatrix();
-    translate(AXIS_LENGTH, 0, 0);
-    box(extrude, extrude, extrude);
+    pushMatrix(); // POUR LA BARRE D'INFORMATIONS
+      camera(0, -CAMERA_HEIGHT, CAMERA_DEPTH, 0, 0, 0, 0, 1, 0);
+      directionalLight(50, 100, 125, 0, 1, 0);
+      directionalLight(50, 100, 125, 0, -1, 0);
+      
+      translate(0, -100, 0);
+      //angleX = map(mouseY, 0, WIDTH, -PI/3, PI/3);
+      //angleZ = map(mouseX, 0, HEIGHT, -PI/3, PI/3);
+      
+      rotateX(-angleX);
+      rotateY(angleY);
+      rotateZ(angleZ);
+  
+      plane.display();
+  
+      noStroke();
+      for (int i = 0; i < nbCylinder; ++i){
+        cylinders.get(i).display();
+      }
+  
+      mover.update();
+      data.pointsLose(mover.checkEdges());
+      for (int i = 0; i < nbCylinder; ++i){
+        data.pointsGain(mover.checkCylinderCollision(cylinders.get(i).position.copy(), cylinders.get(i).cylinderBaseSize));
+      }
+      fill(0,255,0);
+      mover.display();
     popMatrix();
-    
-    stroke(0, 255, 0);
-    line(0, -AXIS_LENGTH, 0, 0, AXIS_LENGTH, 0);
-    pushMatrix();
-    translate(0, AXIS_LENGTH, 0);
-    box(extrude, extrude, extrude);
-    popMatrix();
-    
-    stroke(0, 0, 255);
-    line(0, 0, -AXIS_LENGTH, 0, 0, AXIS_LENGTH);
-    pushMatrix();
-    translate(0, 0, AXIS_LENGTH);
-    box(extrude, extrude, extrude);
-    popMatrix();
-
-    stroke(50, 50, 50);
-    box(PLATE_WIDTH, PLATE_HEIGHT, PLATE_DEPTH); // Draw plate
-
-    noStroke();
-    for (int i = 0; i < nbCylinder; ++i){
-      cylinders.get(i).display();
-    }
-
-    mover.update();
-    mover.checkEdges();
-    for (int i = 0; i < nbCylinder; ++i){
-      mover.checkCylinderCollision(cylinders.get(i).position.get(), cylinders.get(i).cylinderBaseSize);
-    }
-    fill(0,255,0);
-    mover.display();
+    data.update(); // Enregistre la position de la balle
+    data.display(mover.position.x, mover.position.z, mover.velocity.mag(), cylinders);
+    image(BACKGROUND_VISUALISATION, 0, height - DATA_HEIGHT);
+    image(topView, TOP_VIEW_MARGIN, height - DATA_HEIGHT + TOP_VIEW_MARGIN);
+    image(score, 2 * TOP_VIEW_MARGIN + TOP_VIEW_WIDTH, height - DATA_HEIGHT + SCORE_MARGIN);
   } 
   else if (mode == Mode.OBSTACLE) {
     /* In ortho mode, all objects of same size appear the same 
      * size regardless of how far they are from the camera
      */
-    ortho(); 
+    pushMatrix();
+    ortho();
     camera(0, 0, CAMERA_DEPTH_OBSTACLE, 0, 0, 0, 0, 1, 0);
     directionalLight(50, 100, 125, 0, 0, -1);
     
@@ -140,40 +149,16 @@ void draw() {
     for (int i = 0; i < nbCylinder; ++i){
       cylinders.get(i).display();
     }
-    
-    /* Display a cylinder under the cursor :
-     * We are now in ortho mode, thus, the plate has the same size on screen
-     * at any distance in front of the camera.
-     */
      
-     PVector position = positionOnPlate();
+     PVector position = plane.positionOnPlate();
      // The plate is oriented in the x-y plane.
      translate(position.x, -(PLATE_HEIGHT/2 + CYLINDER_HEIGHT), position.y);
      fill(0,0,255);
      dummyCylinder.display();
+     popMatrix();
   }
 }
-
-PVector positionOnPlate() {
-     float xCursorOnPlate = mouseX - WIDTH/2;
-     float yCursorOnPlate = mouseY - HEIGHT/2; //<>//
-      //<>//
-     if(xCursorOnPlate < -PLATE_WIDTH/2 + CYLINDER_RADIUS) {
-       xCursorOnPlate = -PLATE_WIDTH/2 + CYLINDER_RADIUS;
-     }
-     else if(xCursorOnPlate > PLATE_WIDTH/2 - CYLINDER_RADIUS) {
-       xCursorOnPlate = PLATE_WIDTH/2 - CYLINDER_RADIUS;
-     }
-     
-     if(yCursorOnPlate < -PLATE_DEPTH/2 + CYLINDER_RADIUS) {
-       yCursorOnPlate = -PLATE_DEPTH/2 + CYLINDER_RADIUS;
-     }
-     else if(yCursorOnPlate > PLATE_DEPTH/2 - CYLINDER_RADIUS) {
-       yCursorOnPlate = PLATE_DEPTH/2 - CYLINDER_RADIUS;
-     }
-     
-     return new PVector(xCursorOnPlate, yCursorOnPlate);
-}
+ //<>// //<>//
 
 void keyPressed() {
   if (key == CODED) {
@@ -207,8 +192,7 @@ void keyReleased() {
 
 void mouseClicked() {
   if (mode == Mode.OBSTACLE) {
-    PVector position = positionOnPlate();
-    
+    PVector position = plane.positionOnPlate();
     cylinders.add(new Cylinder(new PVector(position.x, -(PLATE_HEIGHT/2 + CYLINDER_HEIGHT), position.y)));
     ++nbCylinder;
   }

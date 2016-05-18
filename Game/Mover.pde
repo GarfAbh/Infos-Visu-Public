@@ -24,7 +24,7 @@ class Mover { //<>// //<>// //<>//
 
     float normalForce = 1;
     float frictionMagnitude = normalForce * MU;
-    PVector friction = velocity.get();
+    PVector friction = velocity.copy();
     friction.mult(-1);
     friction.normalize();
     friction.mult(frictionMagnitude);
@@ -38,32 +38,43 @@ class Mover { //<>// //<>// //<>//
     position.add(velocity);
   }
 
-  public void checkEdges() {
+  public float checkEdges() {
     if (position.x + velocity.x > PLATE_WIDTH/2) {
       position.x = PLATE_WIDTH/2 - velocity.x + (PLATE_WIDTH/2 - position.x);
       velocity.x = -velocity.x;
+      return velocity.mag();
     } else if (position.x + velocity.x < -PLATE_WIDTH/2 ) {
       position.x = -(-PLATE_WIDTH/2 - velocity.x + (PLATE_WIDTH/2 - position.x)); 
       velocity.x = -velocity.x;
+      return velocity.mag();
     }
     if (position.z + velocity.z > PLATE_DEPTH/2) {
       position.z = PLATE_DEPTH/2 - velocity.z + (PLATE_WIDTH/2 - position.z);
       velocity.z = -velocity.z;
+      return velocity.mag();
     } else if (position.z + velocity.z < -PLATE_DEPTH/2 ) {
       position.z = -(-PLATE_DEPTH/2 - velocity.z + (PLATE_WIDTH/2 - position.z));
       velocity.z = -velocity.z;
+      return velocity.mag();
     }
+    return 0;
   }
 
 
-  public void checkCylinderCollision(PVector pos, float r) {
-    n = position.get().sub(pos);
+  public float checkCylinderCollision(PVector pos, float r) {
+    n = position.copy().sub(pos);
     n.y = 0;
     double dist = Math.sqrt( n.dot(n));
-    
     if (dist <= BALL_RADIUS + r) { // collision
       n.normalize();
       velocity = velocity.sub( n.mult(2 * velocity.dot(n)) );
+      //n.mult(r + BALL_RADIUS);
+      //n.add(pos);
+      //position.x = n.x;
+      //position.z = n.z;
+      return velocity.mag();
+    } else {
+      return 0;
     }
   }
 
