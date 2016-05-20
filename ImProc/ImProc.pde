@@ -23,7 +23,7 @@ void setup() {
    * the corresponding number)
   */
   
-  String imageFileName = "../board4.jpg";
+  String imageFileName = "../board1.jpg";
   img = loadImage(imageFileName);
   
   switch(imageFileName) {
@@ -205,8 +205,7 @@ void hough(PImage edgeImg) {
   // You may want to resize the accumulator to make it easier to see:
   houghImg.resize(400, 300);
   houghImg.updatePixels();
-  image(houghImg, img.width, 0);
-
+  
   for (int idx = 0; idx < accumulator.length; idx++) {
     if (accumulator[idx] > 200) {
       // first, compute back the (r, phi) polar coordinates:
@@ -247,4 +246,6 @@ void hough(PImage edgeImg) {
       }
     }
   }
+  
+  image(houghImg, img.width, 0);
 }
