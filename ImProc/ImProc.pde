@@ -15,11 +15,11 @@ void setup() {
 
   minHueBar = new HScrollbar(0, 500, 800, 10);
   maxHueBar = new HScrollbar(0, 515, 800, 10);
-  
+
   minSaturationBar = new HScrollbar(0, 530, 800, 10);
   maxSaturationBar = new HScrollbar(0, 545, 800, 10);
-  
-  minBrightnessBar = new HScrollbar(0,560, 800, 10);
+
+  minBrightnessBar = new HScrollbar(0, 560, 800, 10);
   maxBrightnessBar = new HScrollbar(0, 575, 800, 10);
 }
 
@@ -33,25 +33,26 @@ void draw() {
   float minBr = minBrightnessBar.getPos()*255;
   float maxBr = maxBrightnessBar.getPos()*255;
 
-  PImage smoothedImage = gaussianBlur(img, 30);
-  PImage hueFiltered = selHSB(smoothedImage, minHue, maxHue, minSat, maxSat, minBr, maxBr);
-  PImage sobelImage = sobel(hueFiltered, 0.1);
+  PImage hueFiltered = selHSB(img, minHue, maxHue, minSat, maxSat, minBr, maxBr);
+  PImage smoothedImage = gaussianBlur(hueFiltered, 30);
+  PImage sobelImage = sobel(smoothedImage, 0.1);
+  hough(sobelImage);
 
   image(hueFiltered, 0, 0);
-  image(sobelImage, img.width, 0);
+  image(sobelImage, 2*img.width, 0);
 
   minHueBar.display();
   minHueBar.update();
 
   maxHueBar.display();
   maxHueBar.update();
-  
+
   minSaturationBar.display();
   minSaturationBar.update();
 
   maxSaturationBar.display();
   maxSaturationBar.update();
-  
+
   minBrightnessBar.display();
   minBrightnessBar.update();
 
@@ -69,8 +70,8 @@ PImage selHSB(PImage img, float minHue, float maxHue, float minSat, float maxSat
     float pixelBr = brightness(pixel);
 
     if (pixelHue >= minHue && pixelHue <= maxHue &&
-        pixelSat >= minSat && pixelSat <= maxSat &&
-        pixelBr >= minBr && pixelBr <= maxBr) {
+      pixelSat >= minSat && pixelSat <= maxSat &&
+      pixelBr >= minBr && pixelBr <= maxBr) {
       result.pixels[i] = img.pixels[i];
     } else {
       result.pixels[i] = color(0);
@@ -95,23 +96,23 @@ PImage sobel(PImage img, float max) {
   float[][] vKernel = { { 0, 0, 0  }, 
     { 1, 0, -1 }, 
     { 0, 0, 0  } };
-    
+
   PImage result = createImage(img.width, img.height, ALPHA);
-    
+
   for (int y = 2; y < img.height - 2; y++) {
     // Skip top and bottom edges
     for (int x = 2; x < img.width - 2; x++) {
       float horConv = 0;
       float vertConv = 0;
-      
-      for(int i = 0; i < 3; i++) {
-        for(int j = 0; j < 3; j++) {
+
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
           horConv += brightness(img.pixels[(y+j-1) * img.width + x+i-1]) * hKernel[i][j];
           vertConv += brightness(img.pixels[(y+j-1) * img.width + x+i-1]) * vKernel[i][j];
         }
       }
-   
-       
+
+
       // Skip left and right
       if (sqrt(horConv*horConv + vertConv*vertConv) > (int)(max * 255 * 0.3f)) {
         // 30% of the max
@@ -145,4 +146,49 @@ private PImage convolute(PImage src, float[][] kernel, float weight) {
   }
 
   return result;
+}
+
+void hough(PImage edgeImg) {
+  float discretizationStepsPhi = 0.06f;
+  float discretizationStepsR = 2.5f;
+  // dimensions of the accumulator
+  int phiDim = (int) (Math.PI / discretizationStepsPhi);
+  double rMax = ((edgeImg.width + edgeImg.height) * 2 + 1);
+  int rDim = (int) (rMax / discretizationStepsR);
+  // our accumulator (with a 1 pix margin around)
+  int[] accumulator = new int[(phiDim + 2) * (rDim + 2)];
+  // Fill the accumulator: on edge points (ie, white pixels of the edge 
+  // image), store all possible (r, phi) pairs describing lines going 
+  // through the point.
+  for (int y = 0; y < edgeImg.height; y++) {
+    for (int x = 0; x < edgeImg.width; x++) {
+      // Are we on an edge?
+      if (brightness(edgeImg.pixels[y * edgeImg.width + x]) != 0) {
+        for (int phi = 0; phi < phiDim; phi++) {
+          double phiG = phi*discretizationStepsPhi;
+          double r = x*Math.cos(phiG) + y*Math.sin(phiG);
+          int rx = (int)(r/discretizationStepsR)+(rDim -1)/2;
+          if (rx < 0) {
+            rx+= (rDim -1)/2;
+          }
+          accumulator[phi+1*rDim+2+rx] += 1;
+        }
+        // ...determine here all the lines (r, phi) passing through
+        // pixel (x,y), convert (r,phi) to coordinates in the
+        // accumulator, and increment accordingly the accumulator.
+        // Be careful: r may be negative, so you may want to center onto
+        // the accumulator with something like: r += (rDim - 1) / 2
+      }
+    }
+  }
+
+
+  PImage houghImg = createImage(rDim + 2, phiDim + 2, ALPHA);
+  for (int i = 0; i < accumulator.length; i++) {
+    houghImg.pixels[i] = color(min(255, accumulator[i]));
+  }
+  // You may want to resize the accumulator to make it easier to see:
+  houghImg.resize(400, 400);
+  houghImg.updatePixels();
+  image(houghImg,img.width,0);
 }
