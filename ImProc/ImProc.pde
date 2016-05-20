@@ -37,8 +37,12 @@ void draw() {
   PImage smoothedImage = gaussianBlur(hueFiltered, 30);
   PImage sobelImage = sobel(smoothedImage, 0.1);
   hough(sobelImage);
-
-  image(hueFiltered, 0, 0);
+  
+  
+  img.resize(400,400);
+  sobelImage.resize(400,400);
+  //image(hueFiltered, 0, 0);
+  image(img,0,0);
   image(sobelImage, 2*img.width, 0);
 
   minHueBar.display();
@@ -153,8 +157,7 @@ void hough(PImage edgeImg) {
   float discretizationStepsR = 2.5f;
   // dimensions of the accumulator
   int phiDim = (int) (Math.PI / discretizationStepsPhi);
-  double rMax = ((edgeImg.width + edgeImg.height) * 2 + 1);
-  int rDim = (int) (rMax / discretizationStepsR);
+  int rDim = (int) (((edgeImg.width + edgeImg.height) * 2 + 1) / discretizationStepsR);
   // our accumulator (with a 1 pix margin around)
   int[] accumulator = new int[(phiDim + 2) * (rDim + 2)];
   // Fill the accumulator: on edge points (ie, white pixels of the edge 
@@ -168,9 +171,6 @@ void hough(PImage edgeImg) {
           double phiG = phi*discretizationStepsPhi;
           double r = x*Math.cos(phiG) + y*Math.sin(phiG);
           int rx = (int)(r/discretizationStepsR)+(rDim -1)/2;
-          if (rx < 0) {
-            rx+= (rDim -1)/2;
-          }
           accumulator[phi+1*rDim+2+rx] += 1;
         }
         // ...determine here all the lines (r, phi) passing through
