@@ -58,12 +58,17 @@ void draw() {
   PImage intensityFiltered = intensityThreshold(smoothedImage, settings[6]);
   PImage sobelImage = sobel(intensityFiltered, 0.1);
 
-  img.resize(400, 300);
-  image(img, 0, 0);
-  ArrayList<PVector> lines = hough(sobelImage, 4);
-  plotLines(lines, 400, 300);
+  // Get lines and display the accumulator at the same time
+  ArrayList<PVector> lines = new ArrayList();
+  PImage houghImg = hough(sobelImage, lines, 4);
   ArrayList<PVector> intersections = getIntersections(lines);
   
+  // display everything
+  img.resize(400, 300);
+  image(img, 0, 0);
+  plotLines(lines, 400, 300);
+  plotIntersections(intersections);
+  image(houghImg, img.width, 0);
   sobelImage.resize(400, 300);
   image(sobelImage, 2*img.width, 0);
 }
@@ -170,7 +175,7 @@ private PImage convolute(PImage src, float[][] kernel, float weight) {
   return result;
 }
 
-ArrayList<PVector> hough(PImage edgeImg, int nLines) {
+PImage hough(PImage edgeImg, ArrayList<PVector> lines, int nLines) {
   float discretizationStepsPhi = 0.01f;
   float discretizationStepsR = 2.5f;
   
@@ -256,49 +261,8 @@ ArrayList<PVector> hough(PImage edgeImg, int nLines) {
   
   Collections.sort(bestCandidates, new HoughComparator(accumulator)); 
   // bestCandidates is now sorted by most voted lines.
-  
-  ArrayList<PVector> lines = new ArrayList();
-  
-  for (int i = 0; i < Math.min(nLines, bestCandidates.size()) ; i++) {
-    /*if (accumulator[idx] > 200) {
-      // first, compute back the (r, phi) polar coordinates:
-      int accPhi = (int) (idx / (rDim + 2)) - 1; 
-      int accR = idx - (accPhi + 1) * (rDim + 2) - 1; 
-      float r = (accR - (rDim - 1) * 0.5f) * discretizationStepsR; 
-      float phi = accPhi * discretizationStepsPhi; 
-      // Cartesian equation of a line: y = ax + b
-      // in polar, y = (-cos(phi)/sin(phi))x + (r/sin(phi))
-      // => y = 0 : x = r / cos(phi)
-      // => x = 0 : y = r / sin(phi)
-      // compute the intersection of this line with the 4 borders of // the image
-      int x0 = 0; 
-      int y0 = (int) (r / sin(phi)); 
-      int x1 = (int) (r / cos(phi)); 
-      int y1 = 0; 
-      int x2 = edgeImg.width; 
-      int y2 = (int) (-cos(phi) / sin(phi) * x2 + r / sin(phi)); 
-      int y3 = edgeImg.width; 
-      int x3 = (int) (-(y3 - r / sin(phi)) * (sin(phi) / cos(phi))); 
-      // Finally, plot the lines
-      stroke(204, 102, 0); 
-      if (y0 > 0) {
-        if (x1 > 0)
-          line(x0, y0, x1, y1); 
-        else if (y2 > 0)
-          line(x0, y0, x2, y2); 
-        else
-          line(x0, y0, x3, y3);
-      } else {
-        if (x1 > 0) {
-          if (y2 > 0)
-            line(x1, y1, x2, y2); 
-          else
-            line(x1, y1, x3, y3);
-        } else
-          line(x2, y2, x3, y3);
-      }
-    }*/
     
+  for (int i = 0; i < Math.min(nLines, bestCandidates.size()) ; i++) {
     int index = bestCandidates.get(i);
     int accPhi = (int)(index/(rDim + 2)) - 1;
     int accRayon = index - (accPhi + 1) * (rDim + 2) - 1;
@@ -307,10 +271,8 @@ ArrayList<PVector> hough(PImage edgeImg, int nLines) {
     
     lines.add(new PVector(rayon, phi));
   }
-  
-  image(houghImg, img.width, 0);
-  
-  return lines;
+    
+  return houghImg;
 }
 
 ArrayList<PVector> getIntersections(ArrayList<PVector> lines) {
@@ -327,9 +289,6 @@ ArrayList<PVector> getIntersections(ArrayList<PVector> lines) {
       double y = (-line2.x*Math.cos(line1.y) + line1.x*Math.cos(line2.y))/d;
       
       intersections.add(new PVector((float)x,(float)y));
-      
-      fill(255,128,0);
-      ellipse((float)x,(float)y,10,10);
     }
   }
   
@@ -347,7 +306,7 @@ void plotLines(ArrayList<PVector> lines, int maxWidth, int maxHeight) {
       int y1 = 0; 
       int x2 = maxWidth; 
       int y2 = (int) (-cos(phi) / sin(phi) * x2 + r / sin(phi)); 
-      int y3 = maxHeight; 
+      int y3 = maxWidth; 
       int x3 = (int) (-(y3 - r / sin(phi)) * (sin(phi) / cos(phi))); 
       // Finally, plot the lines
       stroke(204, 102, 0); 
@@ -367,5 +326,12 @@ void plotLines(ArrayList<PVector> lines, int maxWidth, int maxHeight) {
         } else
           line(x2, y2, x3, y3);
       }
+  }
+}
+
+void plotIntersections(ArrayList<PVector> intersections) {
+  for(PVector intersection : intersections) {      
+      fill(255,128,0);
+      ellipse((float)intersection.x,(float)intersection.y,10,10);
   }
 }
