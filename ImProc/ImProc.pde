@@ -1,4 +1,5 @@
 PImage img;
+HScrollbar intensityThresholdBar;
 HScrollbar minHueBar;
 HScrollbar maxHueBar;
 HScrollbar minBrightnessBar;
@@ -11,8 +12,10 @@ void settings() {
 }
 
 void setup() {
-  img = loadImage("../board1.jpg");
+  img = loadImage("../board4.jpg");
 
+  intensityThresholdBar = new HScrollbar(0, 485, 800, 10);
+  
   minHueBar = new HScrollbar(0, 500, 800, 10);
   maxHueBar = new HScrollbar(0, 515, 800, 10);
   
@@ -25,6 +28,8 @@ void setup() {
 
 void draw() {
   background(color(0, 0, 0));
+  
+  float intensityThreshold = intensityThresholdBar.getPos()*255;
 
   float maxHue = maxHueBar.getPos()*255;
   float minHue = minHueBar.getPos()*255;
@@ -33,12 +38,16 @@ void draw() {
   float minBr = minBrightnessBar.getPos()*255;
   float maxBr = maxBrightnessBar.getPos()*255;
 
-  PImage smoothedImage = gaussianBlur(img, 30);
-  PImage hueFiltered = selHSB(smoothedImage, minHue, maxHue, minSat, maxSat, minBr, maxBr);
-  PImage sobelImage = sobel(hueFiltered, 0.1);
+  PImage hueFiltered = selHSB(img, minHue, maxHue, minSat, maxSat, minBr, maxBr);
+  PImage smoothedImage = gaussianBlur(hueFiltered, 30);
+  PImage intensityFiltered = intensityThreshold(smoothedImage, intensityThreshold);
+  PImage sobelImage = sobel(intensityFiltered, 0.1);
 
   image(hueFiltered, 0, 0);
   image(sobelImage, img.width, 0);
+  
+  intensityThresholdBar.display();
+  intensityThresholdBar.update();
 
   minHueBar.display();
   minHueBar.update();
@@ -57,6 +66,23 @@ void draw() {
 
   maxBrightnessBar.display();
   maxBrightnessBar.update();
+  
+  System.out.println("Hue : (" + minHue + "," + maxHue + "), Saturation : (" + minSat + "," + maxSat + "), Brightness : (" + minBr + "," + maxBr + "), Intensity threshold : " + intensityThreshold);  
+}
+
+PImage intensityThreshold(PImage img, float threshold) {
+  PImage result = new PImage(img.width, img.height, RGB);
+  
+  for(int i = 0; i < img.pixels.length; i++) {
+    if(brightness(img.pixels[i]) < threshold) {
+      result.pixels[i] = color(0);
+    }
+    else {
+      result.pixels[i] = color(255);
+    }
+  }
+  
+  return result;
 }
 
 PImage selHSB(PImage img, float minHue, float maxHue, float minSat, float maxSat, float minBr, float maxBr) {
