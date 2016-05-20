@@ -1,5 +1,8 @@
 import java.util.Collections;
+import java.util.Random;
+
 PImage img;
+PImage imgResized;
 
 int[] settings;
 int[] settingsBoard1 = {109, 137, 81, 255, 0, 255, 126};
@@ -22,10 +25,20 @@ void setup() {
    * 
    * Where the image loaded is ../boardX.jpg (replace X by
    * the corresponding number)
+   * 
+   * COMMENTS :
+   * For some reason, despite having perfect clean edge recognition for images 1,3,4,
+   * image 2's edges can't be found. By varying the discretizationStepsPhi variable,
+   * we can manage to get some partial results with this image.
+   *
+   * The computed edges seen on the input images have a little offset to the upper left direction
+   * This is probably due to image resizing.
+   * 
   */
   
   String imageFileName = "../board1.jpg";
   img = loadImage(imageFileName);
+  imgResized = new PImage(img.width, img.height, RGB);
 
   switch(imageFileName) {
   case "../board1.jpg":
@@ -48,6 +61,13 @@ void setup() {
     settings = settingsBoard1;
     break;
   }
+  
+  for(int i = 0; i < img.pixels.length; i++) {
+    imgResized.pixels[i] = img.pixels[i];
+  }
+  
+  imgResized.resize(400, 300);
+  imgResized.updatePixels();
 }
 
 void draw() {
@@ -58,24 +78,50 @@ void draw() {
   PImage intensityFiltered = intensityThreshold(smoothedImage, settings[6]);
   PImage sobelImage = sobel(intensityFiltered, 0.1);
 
-  // Get lines and display the accumulator at the same time
+  sobelImage.resize(400, 300);
+  sobelImage.updatePixels();
+  
+  // Get lines, houghImg, intersections and then quads
   ArrayList<PVector> lines = new ArrayList();
   PImage houghImg = hough(sobelImage, lines, 4);
   ArrayList<PVector> intersections = getIntersections(lines);
   
   // display everything
-  img.resize(400, 300);
-  image(img, 0, 0);
+  image(imgResized, 0, 0);
   plotLines(lines, 400, 300);
+  
+  QuadGraph quadgraph = new QuadGraph();
+  quadgraph.build(lines, 400, 300);
+  quadgraph.findCycles(100, 400);
+  
+  for (int[] quad : quadgraph.cycles) {
+      PVector l1 = lines.get(quad[0]);
+      PVector l2 = lines.get(quad[1]);
+      PVector l3 = lines.get(quad[2]);
+      PVector l4 = lines.get(quad[3]);
+
+      // (intersection() is a simplified version of the
+      // intersections() method you wrote last week, that simply
+      // return the coordinates of the intersection between 2 lines)
+      PVector c12 = getIntersection(l1, l2);
+      PVector c23 = getIntersection(l2, l3);
+      PVector c34 = getIntersection(l3, l4);
+      PVector c41 = getIntersection(l4, l1);
+      // Choose a random, semi-transparent colour
+      Random random = new Random();
+      fill(color(min(255, random.nextInt(300)),
+          min(255, random.nextInt(300)),
+          min(255, random.nextInt(300)), 50));
+      quad(c12.x,c12.y,c23.x,c23.y,c34.x,c34.y,c41.x,c41.y);
+  }
+    
   plotIntersections(intersections);
-  image(houghImg, img.width, 0);
-  sobelImage.resize(400, 300);
-  image(sobelImage, 2*img.width, 0);
+  image(houghImg, imgResized.width, 0);
+  image(sobelImage, 2*imgResized.width, 0);
 }
 
 PImage intensityThreshold(PImage img, float threshold) {
   PImage result = new PImage(img.width, img.height, RGB);
-
   for (int i = 0; i < img.pixels.length; i++) {
     if (brightness(img.pixels[i]) < threshold) {
       result.pixels[i] = color(0);
@@ -293,6 +339,18 @@ ArrayList<PVector> getIntersections(ArrayList<PVector> lines) {
   }
   
   return intersections;
+}
+
+public PVector getIntersection(PVector line1, PVector line2) { 
+
+      double d = Math.cos(line2.y)*Math.sin(line1.y) - Math.cos(line1.y)*Math.sin(line2.y);
+      double x = (line2.x*Math.sin(line1.y) - line1.x*Math.sin(line2.y))/d;
+      double y = (-line2.x*Math.cos(line1.y) + line1.x*Math.cos(line2.y))/d;
+
+    ellipse((float)x, (float)y, 10, 10);
+    fill(255, 128, 0);
+    
+    return new PVector((float)x, (float)y);
 }
 
 void plotLines(ArrayList<PVector> lines, int maxWidth, int maxHeight) {
