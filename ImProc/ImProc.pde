@@ -1,6 +1,8 @@
 import java.util.Collections;
 import java.util.Random;
+import processing.video.*;
 
+Capture cam;
 PImage img;
 PImage imgResized;
 
@@ -34,6 +36,26 @@ void setup() {
    * The computed edges seen on the input images have a little offset to the upper left direction
    * This is probably due to image resizing.
    * 
+  */
+  
+  /*
+  ici pour la cameras
+  */
+  String[] cameras = Capture.list();
+  if(cameras.length == 0){
+    println("there are no cameras available for capture.");
+    exit();
+  }else{
+    println("available cameras :");
+    for(int i = 0 ; i < cameras.length; i++){
+      println(cameras[i]);
+    }
+    cam = new Capture(this,cameras[0]);
+    cam.start();
+  }
+  
+  /*
+  ici pour les images.
   */
   
   String imageFileName = "../board1.jpg";
@@ -72,7 +94,18 @@ void setup() {
 
 void draw() {
   background(color(0, 0, 0));
-
+  
+    /*
+  ici pour la camera
+  */
+  
+  if(cam.available() == true){
+    cam.read();
+  }
+  img = cam.get();
+  image(img,0,0);
+  
+  
   PImage hueFiltered = selHSB(img, settings[0], settings[1], settings[2], settings[3], settings[4], settings[5]);
   PImage smoothedImage = gaussianBlur(hueFiltered, 30);
   PImage intensityFiltered = intensityThreshold(smoothedImage, settings[6]);
@@ -118,6 +151,8 @@ void draw() {
   plotIntersections(intersections);
   image(houghImg, imgResized.width, 0);
   image(sobelImage, 2*imgResized.width, 0);
+  
+
 }
 
 PImage intensityThreshold(PImage img, float threshold) {
