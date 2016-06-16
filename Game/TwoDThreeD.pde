@@ -80,7 +80,7 @@ class TwoDThreeD {
 
     float[][] projectedCorners = new float[4][3];
     
-    for(int i=0;i<4;i++){
+    for(int i=0;i<points2D.size() && i < 4;i++){
         // TODO:
         // store in projectedCorners the result of (K^(-1) · p), for each 
         // corner p found in the webcam image.

@@ -403,7 +403,7 @@ public PVector getIntersection(PVector line1, PVector line2) {
     return new PVector((float)x, (float)y);
 }
 
-void plotLines(ArrayList<PVector> lines, int maxWidth, int maxHeight) {
+void plotLines(PGraphics p, ArrayList<PVector> lines, int maxWidth, int maxHeight, float ratio) {
   for(PVector line : lines) {
       float r = line.x;
       float phi = line.y;
@@ -416,30 +416,40 @@ void plotLines(ArrayList<PVector> lines, int maxWidth, int maxHeight) {
       int y2 = (int) (-cos(phi) / sin(phi) * x2 + r / sin(phi)); 
       int y3 = maxWidth; 
       int x3 = (int) (-(y3 - r / sin(phi)) * (sin(phi) / cos(phi))); 
+      
+      x0 /= ratio;
+      y0 /= ratio;
+      x1 /= ratio;
+      y1 /= ratio;
+      x2 /= ratio;
+      y2 /= ratio;
+      x3 /= ratio;
+      y3 /= ratio;
+      
       // Finally, plot the lines
-      stroke(204, 102, 0); 
+      p.stroke(204, 102, 0); 
       if (y0 > 0) {
         if (x1 > 0)
-          line(x0, y0, x1, y1); 
+          p.line(x0, y0, x1, y1); 
         else if (y2 > 0)
-          line(x0, y0, x2, y2); 
+          p.line(x0, y0, x2, y2); 
         else
-          line(x0, y0, x3, y3);
+          p.line(x0, y0, x3, y3);
       } else {
         if (x1 > 0) {
           if (y2 > 0)
-            line(x1, y1, x2, y2); 
+            p.line(x1, y1, x2, y2); 
           else
-            line(x1, y1, x3, y3);
+            p.line(x1, y1, x3, y3);
         } else
-          line(x2, y2, x3, y3);
+          p.line(x2, y2, x3, y3);
       }
   }
 }
 
-void plotIntersections(ArrayList<PVector> intersections) {
+void plotIntersections(PGraphics p, ArrayList<PVector> intersections, float ratio) {
   for(PVector intersection : intersections) {      
-      fill(255,128,0);
-      ellipse((float)intersection.x,(float)intersection.y,10,10);
+      p.fill(255,128,0);
+      p.ellipse((float)intersection.x/ratio,(float)intersection.y/ratio,10,10);
   }
 }

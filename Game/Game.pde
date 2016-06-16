@@ -50,11 +50,12 @@ final int SCORE_MARGIN = 3;
 final int SCORE_HEIGHT = DATA_HEIGHT - 2 * SCORE_MARGIN;
 final int SCORE_WIDTH = 100;
 
+final int VIDEO_WIDTH = 320;
+final int VIDEO_HEIGHT = 240;
 
-PGraphics BACKGROUND_VISUALISATION;
-PGraphics topView;
-PGraphics score;
-final Data data = new Data();
+PGraphics video;
+
+TwoDThreeD converter;
 
 enum Mode {
   JEU, OBSTACLE
@@ -71,9 +72,8 @@ void settings() {
 }
 
 void setup() {
-  BACKGROUND_VISUALISATION = createGraphics(width, DATA_HEIGHT, P2D);
-  topView = createGraphics(TOP_VIEW_WIDTH, TOP_VIEW_HEIGHT, P2D);
-  score = createGraphics(SCORE_WIDTH, SCORE_HEIGHT, P2D);
+  video = createGraphics(VIDEO_WIDTH, VIDEO_HEIGHT, P2D);
+  
   nbCylinder = 0;
   cylinders = new ArrayList<Cylinder>();
   dummyCylinder = new Cylinder(new PVector(0,0,0));
@@ -83,12 +83,39 @@ void setup() {
   movie = new Movie(this, "testvideo.mp4");
   movie.loop();
   settings = settingsBoard1;
+  
 }
 
 void draw() {
   /*
     Drawing 3D context
    */
+   
+  if(movie.available()) {
+    movie.read();
+  }
+  img = movie.get();
+  img.loadPixels();
+  
+  converter = new TwoDThreeD(img.width, img.height);
+  
+  imgResized = new PImage(img.width, img.height, RGB);
+  
+  PImage hueFiltered = selHSB(img, settings[0], settings[1], settings[2], settings[3], settings[4], settings[5]);
+  PImage smoothedImage = gaussianBlur(hueFiltered, 30);
+  PImage intensityFiltered = intensityThreshold(smoothedImage, settings[6]);
+  PImage sobelImage = sobel(intensityFiltered, 0.1);
+  
+  // Get lines, houghImg, intersections and then quads
+  ArrayList<PVector> lines = new ArrayList();
+  PImage houghImg = hough(sobelImage, lines, 4);
+  ArrayList<PVector> intersections = getIntersections(lines);
+  
+  PVector rotations = converter.get3DRotations(intersections);
+  
+  angleX = rotations.x;
+  angleY = rotations.z;
+  angleZ = rotations.y;
 
   background(200);
   ambientLight(102, 102, 102);
@@ -102,8 +129,6 @@ void draw() {
       directionalLight(50, 100, 125, 0, -1, 0);
       
       translate(0, -100, 0);
-      //angleX = map(mouseY, 0, WIDTH, -PI/3, PI/3);
-      //angleZ = map(mouseX, 0, HEIGHT, -PI/3, PI/3);
       
       rotateX(-angleX);
       rotateY(angleY);
@@ -112,25 +137,33 @@ void draw() {
       plane.display();
   
       noStroke();
+      fill(0,0,255);
       for (int i = 0; i < nbCylinder; ++i){
         cylinders.get(i).display();
       }
   
       mover.update();
-      //data.pointsLose(mover.checkEdges());
-      /*
-      for (int i = 0; i < nbCylinder; ++i){
-        data.pointsGain(mover.checkCylinderCollision(cylinders.get(i).position.copy(), cylinders.get(i).cylinderBaseSize));
-      }
-      */
+
       fill(0,255,0);
       mover.display();
+      
     popMatrix();
-    //data.update(); // Enregistre la position de la balle
-    //data.display(mover.position.x, mover.position.z, mover.velocity.mag(), cylinders);
-    //image(BACKGROUND_VISUALISATION, 0, height - DATA_HEIGHT);
-    //image(topView, TOP_VIEW_MARGIN, height - DATA_HEIGHT + TOP_VIEW_MARGIN);
-    //image(score, 2 * TOP_VIEW_MARGIN + TOP_VIEW_WIDTH, height - DATA_HEIGHT + SCORE_MARGIN);
+    
+      for(int i = 0; i < img.pixels.length; i++) {
+        imgResized.pixels[i] = img.pixels[i];
+      }
+      
+      imgResized.resize(VIDEO_WIDTH, VIDEO_HEIGHT);
+      imgResized.updatePixels();
+      
+      fill(255);
+      video.beginDraw();
+      video.image(imgResized, 0, 0);
+      plotLines(video, lines, VIDEO_WIDTH, VIDEO_HEIGHT, 2);
+      plotIntersections(video, intersections, 2);
+      video.endDraw();
+      
+      image(video, 0, 0);
   } 
   else if (mode == Mode.OBSTACLE) {
     /* In ortho mode, all objects of same size appear the same 
@@ -163,53 +196,9 @@ void draw() {
      dummyCylinder.display();
      popMatrix();
   }
-      /*
-  ici pour la camera
-  */
-    
-  /*if(cam.available()){
-    cam.read();
-  }
-  img = cam.get();*/
-  if(movie.available()) {
-    System.out.println("Available image");
-    movie.read();
-  }
-  img = movie.get();
-  img.loadPixels();
-  
-  image(img,0,0);
-  imgResized = new PImage(img.width, img.height, RGB);
-  
-  if(img.pixels.length == 0) {
-    System.out.println("No image");
-  }
-  
-  
-  PImage hueFiltered = selHSB(img, settings[0], settings[1], settings[2], settings[3], settings[4], settings[5]);
-  PImage smoothedImage = gaussianBlur(hueFiltered, 30);
-  PImage intensityFiltered = intensityThreshold(smoothedImage, settings[6]);
-  PImage sobelImage = sobel(intensityFiltered, 0.1);
-
-  sobelImage.resize(400, 300);
-  sobelImage.updatePixels();
-  
-  // Get lines, houghImg, intersections and then quads
-  ArrayList<PVector> lines = new ArrayList();
-  PImage houghImg = hough(sobelImage, lines, 4);
-  ArrayList<PVector> intersections = getIntersections(lines);
   
   // display everything
-  for(int i = 0; i < img.pixels.length; i++) {
-    imgResized.pixels[i] = img.pixels[i];
-  }
-  
-  imgResized.resize(400, 300);
-  imgResized.updatePixels();
-  
-  //image(imgResized, 0, 0);
-  //plotLines(lines, 400, 300);
-  
+ 
   QuadGraph quadgraph = new QuadGraph();
   quadgraph.build(lines, 400, 300);
   quadgraph.findCycles(100, 400);
@@ -234,11 +223,8 @@ void draw() {
           min(255, random.nextInt(300)), 50));
       quad(c12.x,c12.y,c23.x,c23.y,c34.x,c34.y,c41.x,c41.y);
   }
-    
-  //plotIntersections(intersections);
 }
- //<>// //<>//
-
+ //<>//
 void keyPressed() {
   if (key == CODED) {
     if (keyCode == LEFT) {
@@ -247,6 +233,7 @@ void keyPressed() {
       angleY += PI/32 - movementScale;
     } else if (keyCode == SHIFT){
       mode = Mode.OBSTACLE;
+      movie.pause();
       oldAngleX = angleX;
       oldAngleY = angleY;
       oldAngleZ = angleZ;
@@ -261,6 +248,7 @@ void keyReleased() {
     if (keyCode == SHIFT) {
       if (mode == Mode.OBSTACLE) {
         mode = Mode.JEU;
+        movie.play();
         angleX = oldAngleX;
         angleY = oldAngleY;
         angleZ = oldAngleZ;

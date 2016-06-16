@@ -85,7 +85,6 @@ void setup() {
     break;
   }
   
-<<<<<<< HEAD
   /*movie = new Movie(this, "testvideo.ogg");
 =======
   movie = new Movie(this, "testvideo.mp4");
