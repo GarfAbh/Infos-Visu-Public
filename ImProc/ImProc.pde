@@ -85,7 +85,7 @@ void setup() {
     break;
   }*/
   
-  movie = new Movie(this, "small.mp4");
+  movie = new Movie(this, "testvideo.mp4");
   movie.loop();
   settings = settingsBoard1;
   
@@ -296,7 +296,7 @@ PImage hough(PImage edgeImg, ArrayList<PVector> lines, int nLines) {
         for (int phi = 0; phi < phiDim; phi++) {
           double phiG = phi*discretizationStepsPhi;
           double r = x*Math.cos(phiG) + y*Math.sin(phiG);
-          int rx = (int)((r/discretizationStepsR)+(rDim -1)/2);
+          int rx = (int)((r/discretizationStepsR)+(rDim -1)/2 +1);
           accumulator[(phi+1)*(rDim+2)+rx] += 1;
         }
       }
@@ -317,7 +317,7 @@ PImage hough(PImage edgeImg, ArrayList<PVector> lines, int nLines) {
   // size of the region we search for a local maximum
   int neighbourhood = 10;
   // only search around lines with more that this amount of votes // (to be adapted to your image)
-  int minVotes = 200;
+  int minVotes = 100;
   for (int accR = 0; accR < rDim; accR++) {
     for (int accPhi = 0; accPhi < phiDim; accPhi++) {
       // compute current index in the accumulator

@@ -13,7 +13,7 @@ class QuadGraph {
     int n = lines.size();
 
     // The maximum possible number of edges is n * (n - 1)/2
-    graph = new int[n * (n - 1)/2][2];
+    graph = new int[n * (n + 1)/2][2];
 
     int idx =0;
 
@@ -91,7 +91,7 @@ class QuadGraph {
             System.arraycopy(path, 0, sub, 1, path.length);
             //  explore extended path
             findNewCycles(sub, areaMin, areaMax);
-          } else if ((path.length == 4) && (x == path[path.length - 1]))
+          } else if ((path.length > 3) && (x == path[path.length - 1]))
           {
             //  cycle found
             int[] p = normalize(path);
