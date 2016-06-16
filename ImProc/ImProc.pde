@@ -59,9 +59,9 @@ void setup() {
   ici pour les images.
   */
   
-  /*String imageFileName = "../board1.jpg";
+  String imageFileName = "../board2.jpg";
   img = loadImage(imageFileName);
-  imgResized = new PImage(img.width, img.height, RGB);
+  //imgResized = new PImage(img.width, img.height, RGB);
 
   switch(imageFileName) {
   case "../board1.jpg":
@@ -83,13 +83,14 @@ void setup() {
   default:
     settings = settingsBoard1;
     break;
-  }*/
+  }
   
-  movie = new Movie(this, "small.mp4");
+  /*movie = new Movie(this, "testvideo.ogg");
   movie.loop();
-  settings = settingsBoard1;
+  settings = settingsBoard1;*/
   
   //while(!movie.available());
+  noLoop();
 }
 
 void draw() {
@@ -103,7 +104,7 @@ void draw() {
     cam.read();
   }
   img = cam.get();*/
-  if(movie.available()) {
+  /*if(movie.available()) {
     System.out.println("Available image");
     movie.read();
   }
@@ -115,7 +116,7 @@ void draw() {
   
   if(img.pixels.length == 0) {
     System.out.println("No image");
-  }
+  }*/
   
   
   PImage hueFiltered = selHSB(img, settings[0], settings[1], settings[2], settings[3], settings[4], settings[5]);
@@ -130,6 +131,8 @@ void draw() {
   ArrayList<PVector> lines = new ArrayList();
   PImage houghImg = hough(sobelImage, lines, 4);
   ArrayList<PVector> intersections = getIntersections(lines);
+  
+  imgResized = new PImage(img.width, img.height, RGB);
   
   // display everything
   for(int i = 0; i < img.pixels.length; i++) {
