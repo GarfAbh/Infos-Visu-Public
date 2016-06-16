@@ -1,5 +1,5 @@
-final int WIDTH = 500;
-final int HEIGHT = 500;
+final int WIDTH = 1200;
+final int HEIGHT = 800;
 
 final int CAMERA_DEPTH = 750;
 final int CAMERA_DEPTH_OBSTACLE = 50;
@@ -79,6 +79,10 @@ void setup() {
   dummyCylinder = new Cylinder(new PVector(0,0,0));
   mover = new Mover();
   plane = new Plane();
+  
+  movie = new Movie(this, "testvideo.mp4");
+  movie.loop();
+  settings = settingsBoard1;
 }
 
 void draw() {
@@ -113,18 +117,20 @@ void draw() {
       }
   
       mover.update();
-      data.pointsLose(mover.checkEdges());
+      //data.pointsLose(mover.checkEdges());
+      /*
       for (int i = 0; i < nbCylinder; ++i){
         data.pointsGain(mover.checkCylinderCollision(cylinders.get(i).position.copy(), cylinders.get(i).cylinderBaseSize));
       }
+      */
       fill(0,255,0);
       mover.display();
     popMatrix();
-    data.update(); // Enregistre la position de la balle
-    data.display(mover.position.x, mover.position.z, mover.velocity.mag(), cylinders);
-    image(BACKGROUND_VISUALISATION, 0, height - DATA_HEIGHT);
-    image(topView, TOP_VIEW_MARGIN, height - DATA_HEIGHT + TOP_VIEW_MARGIN);
-    image(score, 2 * TOP_VIEW_MARGIN + TOP_VIEW_WIDTH, height - DATA_HEIGHT + SCORE_MARGIN);
+    //data.update(); // Enregistre la position de la balle
+    //data.display(mover.position.x, mover.position.z, mover.velocity.mag(), cylinders);
+    //image(BACKGROUND_VISUALISATION, 0, height - DATA_HEIGHT);
+    //image(topView, TOP_VIEW_MARGIN, height - DATA_HEIGHT + TOP_VIEW_MARGIN);
+    //image(score, 2 * TOP_VIEW_MARGIN + TOP_VIEW_WIDTH, height - DATA_HEIGHT + SCORE_MARGIN);
   } 
   else if (mode == Mode.OBSTACLE) {
     /* In ortho mode, all objects of same size appear the same 
@@ -157,6 +163,79 @@ void draw() {
      dummyCylinder.display();
      popMatrix();
   }
+      /*
+  ici pour la camera
+  */
+    
+  /*if(cam.available()){
+    cam.read();
+  }
+  img = cam.get();*/
+  if(movie.available()) {
+    System.out.println("Available image");
+    movie.read();
+  }
+  img = movie.get();
+  img.loadPixels();
+  
+  image(img,0,0);
+  imgResized = new PImage(img.width, img.height, RGB);
+  
+  if(img.pixels.length == 0) {
+    System.out.println("No image");
+  }
+  
+  
+  PImage hueFiltered = selHSB(img, settings[0], settings[1], settings[2], settings[3], settings[4], settings[5]);
+  PImage smoothedImage = gaussianBlur(hueFiltered, 30);
+  PImage intensityFiltered = intensityThreshold(smoothedImage, settings[6]);
+  PImage sobelImage = sobel(intensityFiltered, 0.1);
+
+  sobelImage.resize(400, 300);
+  sobelImage.updatePixels();
+  
+  // Get lines, houghImg, intersections and then quads
+  ArrayList<PVector> lines = new ArrayList();
+  PImage houghImg = hough(sobelImage, lines, 4);
+  ArrayList<PVector> intersections = getIntersections(lines);
+  
+  // display everything
+  for(int i = 0; i < img.pixels.length; i++) {
+    imgResized.pixels[i] = img.pixels[i];
+  }
+  
+  imgResized.resize(400, 300);
+  imgResized.updatePixels();
+  
+  //image(imgResized, 0, 0);
+  //plotLines(lines, 400, 300);
+  
+  QuadGraph quadgraph = new QuadGraph();
+  quadgraph.build(lines, 400, 300);
+  quadgraph.findCycles(100, 400);
+  
+  for (int[] quad : quadgraph.cycles) {
+      PVector l1 = lines.get(quad[0]);
+      PVector l2 = lines.get(quad[1]);
+      PVector l3 = lines.get(quad[2]);
+      PVector l4 = lines.get(quad[3]);
+
+      // (intersection() is a simplified version of the
+      // intersections() method you wrote last week, that simply
+      // return the coordinates of the intersection between 2 lines)
+      PVector c12 = getIntersection(l1, l2);
+      PVector c23 = getIntersection(l2, l3);
+      PVector c34 = getIntersection(l3, l4);
+      PVector c41 = getIntersection(l4, l1);
+      // Choose a random, semi-transparent colour
+      Random random = new Random();
+      fill(color(min(255, random.nextInt(300)),
+          min(255, random.nextInt(300)),
+          min(255, random.nextInt(300)), 50));
+      quad(c12.x,c12.y,c23.x,c23.y,c34.x,c34.y,c41.x,c41.y);
+  }
+    
+  //plotIntersections(intersections);
 }
  //<>// //<>//
 
