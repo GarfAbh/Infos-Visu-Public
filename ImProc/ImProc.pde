@@ -3,6 +3,7 @@ import java.util.Random;
 import processing.video.*;
 
 Capture cam;
+Movie movie;
 PImage img;
 PImage imgResized;
 
@@ -41,7 +42,7 @@ void setup() {
   /*
   ici pour la cameras
   */
-  String[] cameras = Capture.list();
+  /*String[] cameras = Capture.list();
   if(cameras.length == 0){
     println("there are no cameras available for capture.");
     exit();
@@ -50,15 +51,15 @@ void setup() {
     for(int i = 0 ; i < cameras.length; i++){
       println(cameras[i]);
     }
-    cam = new Capture(this,cameras[0]);
+    cam = new Capture(this,cameras[3]);
     cam.start();
-  }
+  }*/
   
   /*
   ici pour les images.
   */
   
-  String imageFileName = "../board1.jpg";
+  /*String imageFileName = "../board1.jpg";
   img = loadImage(imageFileName);
   imgResized = new PImage(img.width, img.height, RGB);
 
@@ -82,14 +83,13 @@ void setup() {
   default:
     settings = settingsBoard1;
     break;
-  }
+  }*/
   
-  for(int i = 0; i < img.pixels.length; i++) {
-    imgResized.pixels[i] = img.pixels[i];
-  }
+  movie = new Movie(this, "small.mp4");
+  movie.loop();
+  settings = settingsBoard1;
   
-  imgResized.resize(400, 300);
-  imgResized.updatePixels();
+  //while(!movie.available());
 }
 
 void draw() {
@@ -98,12 +98,24 @@ void draw() {
     /*
   ici pour la camera
   */
-  
-  if(cam.available() == true){
+    
+  /*if(cam.available()){
     cam.read();
   }
-  img = cam.get();
+  img = cam.get();*/
+  if(movie.available()) {
+    System.out.println("Available image");
+    movie.read();
+  }
+  img = movie.get();
+  img.loadPixels();
+  
   image(img,0,0);
+  imgResized = new PImage(img.width, img.height, RGB);
+  
+  if(img.pixels.length == 0) {
+    System.out.println("No image");
+  }
   
   
   PImage hueFiltered = selHSB(img, settings[0], settings[1], settings[2], settings[3], settings[4], settings[5]);
@@ -120,6 +132,13 @@ void draw() {
   ArrayList<PVector> intersections = getIntersections(lines);
   
   // display everything
+  for(int i = 0; i < img.pixels.length; i++) {
+    imgResized.pixels[i] = img.pixels[i];
+  }
+  
+  imgResized.resize(400, 300);
+  imgResized.updatePixels();
+  
   image(imgResized, 0, 0);
   plotLines(lines, 400, 300);
   
