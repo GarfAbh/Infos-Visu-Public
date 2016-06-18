@@ -15,6 +15,7 @@ float oldAngleY;
 float oldAngleZ;
 
 final float MAX_ROTATION = PI/3;
+final float MIN_ROTATION = -PI/3;
 final float MAX_ROTATION_SPEED = 0.05;
 final float MIN_ROTATION_SPEED = 0.0001;
 final float ROTATION_INCREMENT = 0.001;
@@ -53,9 +54,16 @@ final int SCORE_WIDTH = 100;
 final int VIDEO_WIDTH = 320;
 final int VIDEO_HEIGHT = 240;
 
+
+//CST pour la transcription de l'image jusqu'au jeu.
 PGraphics video;
 
 TwoDThreeD converter;
+PVector curr = new PVector(0,0,0);
+PVector old1 = new PVector(0,0,0);
+PVector old2 = new PVector(0,0,0);
+PVector avg = new PVector(0,0,0);
+
 
 enum Mode {
   JEU, OBSTACLE
@@ -111,12 +119,8 @@ void draw() {
   PImage houghImg = hough(sobelImage, lines, 4);
   ArrayList<PVector> intersections = getIntersections(lines);
   
-  PVector rotations = converter.get3DRotations(intersections);
-  
-  angleX = rotations.x;
-  angleY = rotations.z;
-  angleZ = rotations.y;
 
+  
   background(200);
   ambientLight(102, 102, 102);
   fill(255);
@@ -130,6 +134,21 @@ void draw() {
       
       translate(0, -100, 0);
       
+      if(!intersections.isEmpty()){
+        old2 = old1;
+        old1 = curr;
+        curr = converter.get3DRotations(intersections);
+      }
+
+  
+    if(old2.x != 0 && old2.y != 0 && old2.z != 0){
+      avg = old2.add(old1.add(curr)).div(3.0);
+      angleX = constrain(avg.x,MIN_ROTATION,MAX_ROTATION);
+      angleY = constrain(avg.z,MIN_ROTATION,MAX_ROTATION);
+      angleZ = constrain(avg.y,MIN_ROTATION,MAX_ROTATION);
+    }
+      
+      //ici il faut que nos angle soit puisse pas aller au dela de certaine valeur.
       rotateX(-angleX);
       rotateY(angleY);
       rotateZ(angleZ);
@@ -239,6 +258,7 @@ void keyPressed() {
       oldAngleZ = angleZ;
       angleX = PI/2;
       angleZ = 0;
+      angleY = 0;
     }
   }
 }
