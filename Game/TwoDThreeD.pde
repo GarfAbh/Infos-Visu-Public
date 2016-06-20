@@ -203,7 +203,7 @@ public static List<PVector> sortCorners(List<PVector> quad){
   
   double minDist = Math.sqrt(quad.get(0).x*quad.get(0).x + quad.get(0).y*quad.get(0).y);
   int corner = 0;
-  for(int i = 1; i < 4 ;i++){
+  for(int i = 1; i < Math.min(4, quad.size());i++){
     if(minDist >= Math.sqrt(quad.get(i).x*quad.get(i).x + quad.get(i).y*quad.get(i).y)){
       minDist = Math.sqrt(quad.get(i).x*quad.get(i).x + quad.get(i).y*quad.get(i).y);
       corner = i;
