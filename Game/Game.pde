@@ -1,4 +1,4 @@
-final int WIDTH = 1200; //<>// //<>//
+final int WIDTH = 1200; //<>// //<>// //<>//
 final int HEIGHT = 800;
 
 final int CAMERA_DEPTH = 750;
@@ -133,10 +133,12 @@ void draw() {
 
     translate(0, -100, 0);
 
-    if (!intersections.isEmpty() && intersections.size() == 4) {
+    if (!intersections.isEmpty()) {
       old2 = old1;
       old1 = curr;
+      if(intersections.size() >= 4){
       curr = converter.get3DRotations(intersections);
+      }
     }
 
 
