@@ -133,7 +133,7 @@ void draw() {
 
     translate(0, -100, 0);
 
-    if (!intersections.isEmpty()) {
+    if (!intersections.isEmpty() && intersections.size() == 4) {
       old2 = old1;
       old1 = curr;
       curr = converter.get3DRotations(intersections);
@@ -223,7 +223,7 @@ void draw() {
   for (int[] quad : quadgraph.cycles) {
     PVector l1 = lines.get(quad[0]);
     PVector l2 = lines.get(quad[1]);
-    PVector l3 = lines.get(quad[2]);
+    PVector l3 = lines.get(quad[2]); //<>//
     PVector l4 = lines.get(quad[3]);
 
     // (intersection() is a simplified version of the
@@ -285,7 +285,7 @@ void mouseClicked() {
 
 void mouseDragged() {
   if (mode == Mode.JEU) {
-    float angleIncrementX = rotationSpeed * (mouseY - pmouseY);
+    float angleIncrementX = rotationSpeed * (mouseY - pmouseY); //<>//
     float angleIncrementZ = rotationSpeed * (mouseX - pmouseX);
 
     if (abs(angleX + angleIncrementX) < MAX_ROTATION) {
