@@ -35,6 +35,8 @@ class TwoDThreeD {
   }
 
    PVector get3DRotations(List<PVector> points2D) {
+     
+     sortCorners(points2D);
     
     // 1- Solve the extrinsic matrix from the projected 2D points
     double[][] E = solveExtrinsicMatrix(points2D);
@@ -80,7 +82,8 @@ class TwoDThreeD {
 
     float[][] projectedCorners = new float[4][3];
     
-    for(int i=0;i<points2D.size() && i < 4;i++){
+    for(int i=0;i<points2D.size()
+    && i < 4;i++){
         // TODO:
         // store in projectedCorners the result of (K^(-1) · p), for each 
         // corner p found in the webcam image.
